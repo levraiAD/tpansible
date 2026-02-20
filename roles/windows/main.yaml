@@ -34,3 +34,10 @@
 - name: Configurer passerelle DHCP
   ansible.windows.win_shell: |
     Set-DhcpServerv4OptionValue -ScopeId 10.10.0.0 -Router 10.10.0.1
+
+- name: Créer utilisateur AdminTechSecure
+  ansible.windows.win_user:
+    name: AdminTechSecure
+    password: "P@ssw0rd123!"
+    groups: Administrators
+    state: present

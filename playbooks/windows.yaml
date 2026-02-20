@@ -1,0 +1,6 @@
+- name: Gestion des serveurs Windows (DNS/DHCP)
+  hosts: windows_servers
+  gather_facts: yes
+  become: yes
+  roles:
+    - windows_admin

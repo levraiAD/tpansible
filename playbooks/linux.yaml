@@ -1,0 +1,6 @@
+---
+- name: Administration Linux (HTOP, fail2ban, SSH Hardening)
+  hosts: linux_servers
+  become: yes
+  roles:
+    - linux_admin

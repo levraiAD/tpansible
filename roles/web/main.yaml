@@ -1,30 +1,104 @@
-- name: "Installer "
-  ansible.builtin.package:
-    name: htop
-    state: present
+- name: Configuration Web + Hardening SSH
+  hosts: web
+  become: yes
 
-- name: "Installer fail2ban"
-  ansible.builtin.package:
-    name: fail2ban
-    state: present
+  handlers:
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
 
-- name: "SSH Hardening : Désactiver mot de passe"
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^#?PasswordAuthentication'
-    line: 'PasswordAuthentication no'
-  notify: "Restart SSH"
+    - name: Reload Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
 
-- name: "SSH Hardening : Connexion par clé publique"
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^#?PubkeyAuthentication'
-    line: 'PubkeyAuthentication yes'
-  notify: "Restart SSH"
+  tasks:
 
-- name: "SSH Hardening : Interdiction du login en root"
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^#?PermitRootLogin'
-    line: 'PermitRootLogin no'
-  notify: "Restart SSH"
+    - name: Installer paquets nécessaires
+      ansible.builtin.package:
+        name:
+          - nginx
+          - htop
+        state: present
+
+    - name: SSH Hardening - Désactiver mot de passe
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        backup: yes
+      notify: Restart SSH
+
+    - name: SSH Hardening - Activer clé publique
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PubkeyAuthentication'
+        line: 'PubkeyAuthentication yes'
+      notify: Restart SSH
+
+    - name: SSH Hardening - Interdire login root
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin no'
+      notify: Restart SSH
+
+    - name: Démarrer et activer Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Déployer page d'accueil personnalisée
+      ansible.builtin.copy:
+        dest: /var/www/html/index.html
+        content: |
+          <html>
+          <body>
+          <h1>Bienvenue sur le serveur web Nginx !</h1>
+          </body>
+          </html>
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      notify: Reload Nginx
+
+    - name: Générer certificat SSL auto-signé
+      ansible.builtin.command:
+        cmd: >
+          openssl req -x509 -nodes -days 365 -newkey rsa:2048
+          -keyout /etc/ssl/private/nginx-selfsigned.key
+          -out /etc/ssl/certs/nginx-selfsigned.crt
+          -subj "/CN=localhost"
+      args:
+        creates: /etc/ssl/certs/nginx-selfsigned.crt
+      notify: Reload Nginx
+
+    - name: Configurer Nginx pour HTTPS
+      ansible.builtin.copy:
+        dest: /etc/nginx/sites-available/default
+        content: |
+          server {
+              listen 80 default_server;
+              return 301 https://$host$request_uri;
+          }
+
+          server {
+              listen 443 ssl default_server;
+              listen [::]:443 ssl default_server;
+
+              ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+              ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+
+              root /var/www/html;
+              index index.html;
+
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+          }
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reload Nginx
