@@ -1,30 +1,32 @@
-- name: "Installer HTOP"
-  ansible.builtin.package:
-    name: htop
+---
+- name: Installer paquets nécessaires
+  apt:
+    name:
+      - htop
+      - fail2ban
+      - ufw
     state: present
+    update_cache: true
 
-- name: "Installer fail2ban"
-  ansible.builtin.package:
-    name: fail2ban
-    state: present
-
-- name: "SSH Hardening : Désactiver mot de passe"
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^#?PasswordAuthentication'
-    line: 'PasswordAuthentication no'
-  notify: "Restart SSH"
-
-- name: "SSH Hardening : Connexion par clé publique"
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^#?PubkeyAuthentication'
-    line: 'PubkeyAuthentication yes'
-  notify: "Restart SSH"
-
-- name: "SSH Hardening : Interdiction du login en root"
+- name: Désactiver login root SSH
   lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?PermitRootLogin'
     line: 'PermitRootLogin no'
-  notify: "Restart SSH"
+
+- name: Désactiver PasswordAuthentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+
+- name: Redémarrer SSH
+  service:
+    name: ssh
+    state: restarted
+
+- name: Activer fail2ban
+  service:
+    name: fail2ban
+    state: started
+    enabled: true

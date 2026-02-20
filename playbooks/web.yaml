@@ -1,6 +1,6 @@
 ---
-- name: Configure Web
+- name: Déploiement Web
   hosts: web
-  become: yes
+  become: true
   roles:
     - web
