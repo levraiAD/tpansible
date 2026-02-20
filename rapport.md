@@ -1,5 +1,6 @@
 # TP  
 ## Conception, Déploiement et Administration d’un Réseau d’Entreprise  
+## Axel DAMIEN et Martin DECOBECQ
 ### TechSecure
 
 ---
@@ -31,7 +32,6 @@ L’infrastructure est composée de serveurs Linux, d’un serveur Windows, d’
 
 - Installation des rôles DNS et DHCP
 - Application d’une politique de mot de passe sécurisée
-- Désactivation du protocole SMBv1
 
 ## 2.3 Serveur Web
 
@@ -181,4 +181,10 @@ ansible-playbook -i inventory/hosts.ini playbooks/firewall.yaml
 - Les services sont correctement installés.
 - Les règles firewall sont appliquées.
 - Le serveur Web est fonctionnel.
-
+- Exemple de connexion ssh : 
+```txt
+TASK [Ping the web server] **********************************************
+ok: [192.168.1.59] => {
+    "msg": "Le serveur web est joignable via SSH."
+}
+```
