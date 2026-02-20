@@ -1,4 +1,4 @@
-- name: "Installer HTOP"
+- name: "Installer "
   ansible.builtin.package:
     name: htop
     state: present
